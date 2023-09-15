@@ -3,6 +3,7 @@
 #include <common.hpp>
 #include <krnl.hpp>
 
+
 static int *screen = (int *)mbi->framebuffer_addr;
 
 void putpixel(int x, int y, uint32_t color) {
@@ -22,22 +23,45 @@ static inline void outb(uint16_t port, uint8_t val)
 void dbgputchar(char c) {
     outb(0xe9, c);
 }
+void putchar(
+    /* note that this is int, not char as it's a unicode character */
+    unsigned short int c,
+    /* cursor position on screen, in characters not in pixels */
+    int cx, int cy,
+    /* foreground and background colors, say 0xFFFFFF and 0x000000 */
+    uint32_t fg, uint32_t bg);
+
+int x, y;
+int fx, fy;
+int scanline;
+
+void psf_putchar(char c) {
+    if (c == '\n') {
+        y+=fy;
+        x = 0;
+        return;
+    }
+    putchar(c, x, y, 0xffffff, 0x0);
+    x+=fx;
+}
 
 void printdbg(const char *txt) {
-    for (int i=0;i<strlen(txt);i++) {
-        dbgputchar(txt[i]);
+    while (*txt) {
+        dbgputchar(*txt);
+        psf_putchar(*txt);
+        txt++;
     }
 }
-#define PORT 0x3f8          // COM1
+
 multiboot_info_t *mbi;
-#define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
+
+#define s 500
+void psf_init();
 extern "C" void init_main(multiboot_info_t *mbi2) {
     mbi = mbi2;
     screen = (int *)mbi->framebuffer_addr;
     Kernel::pmm_setup();
-    for (int i=0;i<50;i++) {
-        for (int y=0;y<50;y++) {
-            putpixel(i, y, 0xff+(i*y));
-        }
-    }
+    scanline = mbi->framebuffer_pitch;
+    psf_init();
+    printdbg("psf done\n");
 }

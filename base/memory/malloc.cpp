@@ -18,20 +18,21 @@ int avaible_mem, total_mem;
 static multiboot_mmap_entry big;
 
 static alloc_struct *root;
-void dbgputchar(char c);
+void printdbg(const char *c);
 void Kernel::pmm_setup() {
     multiboot_mmap_entry *mmap = (multiboot_mmap_entry *)mbi->mmap_addr;
     mmap = (multiboot_mmap_entry *)mbi->mmap_addr;
-    for (int i=0;i<mbi->mmap_length;i+=mmap->size) {
-        total_mem += mmap->len;
-        //dbgputchar('a');
+    for (mmap = (multiboot_memory_map_t *) mbi->mmap_addr;
+           (unsigned long) mmap < mbi->mmap_addr + mbi->mmap_length;
+           mmap = (multiboot_memory_map_t *) ((unsigned long) mmap
+                                    + mmap->size + sizeof (mmap->size))) {
+        //total_mem += mmap->len;
         if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
             avaible_mem += mmap->len;
             if (mmap->len > big.len) {
                 big = *mmap;
             }
         }
-        mmap += mmap->size;
     }
     root = (alloc_struct *)big.addr;
     root->allocated = false;

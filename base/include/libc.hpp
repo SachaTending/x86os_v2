@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 // String operations
-int strlen(const char *txt);
+size_t strlen(const char *txt);
 int strcpy(char *dst, const char *src);
 int strcmp(const char *dst, char *src);
 int strncmp(const char *dst, char *src);

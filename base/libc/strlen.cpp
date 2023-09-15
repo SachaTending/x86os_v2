@@ -1,9 +1,8 @@
+#include <stdint.h>
 void dbgputchar(char c);
 
-int strlen(const char *txt) {
-    int len = 0;
-	while (*txt)
-		len++;
-        txt++;
+size_t strlen(const char *txt) {
+    size_t len = 0;
+    for (len=0;txt[len];len++);
 	return len;
 }

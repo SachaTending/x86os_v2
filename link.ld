@@ -29,11 +29,6 @@ SECTIONS
 	.data BLOCK(4K) : ALIGN(4K)
 	{
 		*(.data)
-		start_ctors = .;
-		KEEP(*( .ctors ));
-    	KEEP(*( .init_array ));
-    	KEEP(*(SORT_BY_INIT_PRIORITY( .init_array.* )));
-    	end_ctors = .;
 	}
  
 	/* Read-write data (uninitialized) and stack */

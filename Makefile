@@ -3,7 +3,7 @@ NASM=nasm
 LD=ld
 
 NFLAGS = -felf32 -g
-CFLAGS = -m32 -march=i386 -c -fno-leading-underscore -I base/include -g -ffreestanding
+CFLAGS = -m32 -march=i386 -c -fno-leading-underscore -I base/include -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -fpermissive
 LFLAGS = -Tlink.ld -melf_i386 -A i386 -g
 
 OBJ = 
