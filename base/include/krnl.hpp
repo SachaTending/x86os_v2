@@ -3,5 +3,5 @@
 namespace Kernel
 {
     void pmm_setup();
-    void main();
+    void Main();
 } // namespace Kernel

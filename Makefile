@@ -3,7 +3,7 @@ NASM=nasm
 LD=ld
 
 NFLAGS = -felf32 -g
-CFLAGS = -m32 -march=i386 -c -fno-leading-underscore -I base/include -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -fpermissive
+CFLAGS = -m32 -march=i386 -c -fno-leading-underscore -I base/include -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -fpermissive -g
 LFLAGS = -Tlink.ld -melf_i386 -A i386 -g
 
 OBJ = 
@@ -40,4 +40,4 @@ clean:
 	@-rm $(OBJ) image.iso iso/kernel.elf kernel.elf
 
 run: build
-	@qemu-system-i386 -cdrom image.iso -m 512M -debugcon stdio
+	@qemu-system-i386 -cdrom image.iso -m 512M -serial stdio

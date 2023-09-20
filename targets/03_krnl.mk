@@ -1,0 +1,1 @@
+OBJ += krnl/krnl.o

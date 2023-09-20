@@ -8,6 +8,10 @@ base/
      memory/ - Memory management stuff
             malloc.cpp - malloc and free
      libc/ - Simple and basic libc implementation
+     drivers/ - Drivers
+     core/ - Core files, needed for kernel to work
+          psfdraw.cpp - Draws text using psf font
+          putc.cpp - implemintation of putc
 
 iso/ - ISO root files, also contains bootloader files
 

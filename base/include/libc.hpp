@@ -7,11 +7,19 @@ int strcpy(char *dst, const char *src);
 int strcmp(const char *dst, char *src);
 int strncmp(const char *dst, char *src);
 
+// Conversion
+void itoa(char *buf, unsigned long int n, int base);
+int atoi(char * string);
+
 // Memory operations
-void *memset(void *dst, char v, int n);
-int memcmp(uint8_t * data1, uint8_t * data2, int n);
-int memcmpn(uint8_t * data1, uint8_t * data2, int n);
+extern "C" void *memset(void *dst, char v, int n);
+extern "C" int memcmp(uint8_t * data1, uint8_t * data2, int n);
+extern "C" int memcmpn(uint8_t * data1, uint8_t * data2, int n);
+extern "C" int memcpy(void *dst, const void *src, int num);
 
 // Allocations
 void *malloc(size_t size);
 void free(void *addr);
+
+// Other
+void printf(const char *fmt, ...);
