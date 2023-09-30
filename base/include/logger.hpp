@@ -4,6 +4,7 @@ class logger
 {
 private:
     const char *name;
+    bool lock;
 public:
     logger(const char *l);
     void info(const char *fmt, ...);

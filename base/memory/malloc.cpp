@@ -16,7 +16,8 @@ struct alloc_struct
 int avaible_mem, total_mem;
 
 static multiboot_mmap_entry big;
-
+extern int kernel_start;
+extern int kernel_end;
 static alloc_struct *root;
 void printdbg(const char *c);
 void Kernel::pmm_setup() {
@@ -33,6 +34,10 @@ void Kernel::pmm_setup() {
                 big = *mmap;
             }
         }
+    }
+    if (big.addr == (uint64_t)&kernel_start) {
+        big.addr = (uint64_t)&kernel_end+1;
+        big.len = big.len - (&kernel_end - &kernel_start);
     }
     root = (alloc_struct *)big.addr;
     root->allocated = false;
@@ -98,6 +103,7 @@ void * malloc(size_t size) {
         }
     }
     debug("No free block found.\n");
+    printf("WE FUCKED UP, NO MEMORY.\n");
     return (void *)-1;
 }
 void free(void *mem) {

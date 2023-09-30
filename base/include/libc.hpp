@@ -6,6 +6,8 @@ size_t strlen(const char *txt);
 int strcpy(char *dst, const char *src);
 int strcmp(const char *dst, char *src);
 int strncmp(const char *dst, char *src);
+int strtok(const char *str, char tok);
+char *strdup(char *str);
 
 // Conversion
 void itoa(char *buf, unsigned long int n, int base);
@@ -22,4 +24,4 @@ void *malloc(size_t size);
 void free(void *addr);
 
 // Other
-void printf(const char *fmt, ...);
+extern "C" void printf(const char *fmt, ...);

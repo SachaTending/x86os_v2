@@ -6,17 +6,17 @@ idt_flush:
 
 %macro isr_err_stub 1
 isr_stub_%+%1:
-    push %1
-    call exception_handler
-    iret 
+    cli
+    push byte %1
+    jmp exception_handler
 %endmacro
 
 %macro isr_no_err_stub 1
 isr_stub_%+%1:
-    push 0
-    push %1
-    call exception_handler
-    iret
+    cli
+    push byte 0
+    push byte %1
+    jmp exception_handler
 %endmacro
 
     isr_no_err_stub 0
@@ -53,7 +53,7 @@ isr_stub_%+%1:
     isr_no_err_stub 31
 
 %assign i 32
-%rep 256
+%rep 64
 isr_no_err_stub i
 %assign i i+1
 %endrep
@@ -61,7 +61,7 @@ isr_no_err_stub i
 global isr_stub_table
 isr_stub_table:
 %assign i 0 
-%rep    256 
+%rep    64 
     dd isr_stub_%+i ; use DQ instead if targeting 64-bit
 %assign i i+1 
 %endrep

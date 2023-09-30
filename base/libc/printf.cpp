@@ -139,7 +139,7 @@ void vsprintf(char * str, void (*putchar)(char), const char * format, va_list ar
  * printf is sprintf is very similar, except that sprintf doesn't print to screen
  * */
 void putc(char c);
-void printf(const char * s, ...) {
+extern "C" void printf(const char * s, ...) {
     va_list ap;
     va_start(ap, s);
     vsprintf(NULL, putc, s, ap);

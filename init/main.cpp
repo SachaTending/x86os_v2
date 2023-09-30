@@ -43,7 +43,7 @@ void psf_init();
 extern "C" void init_main(multiboot_info_t *mbi2) {
     mbi = mbi2;
     screen = (int *)mbi->framebuffer_addr;
-    ;Kernel::pmm_setup();
+    Kernel::pmm_setup();
     psf_init();
     callConstructors();
     log.info("Oh, welcome to x86OS. Currently, kernel is setupping enviroment, then, kernel gonna do all things\n");
