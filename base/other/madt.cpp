@@ -114,16 +114,16 @@ void madt_setup() {
         {
             case APIC_TYPE_LOCAL_APIC:
                 l = (lapic *)p;
-                log.info("LAPIC:\n");
-                log.info("CPU ID: %d\n", l->cpu_id);
-                log.info("APIC ID: %d\n", l->apic_id);
+                //log.info("LAPIC:\n");
+                //log.info("CPU ID: %d\n", l->cpu_id);
+                //log.info("APIC ID: %d\n", l->apic_id);
                 lapic_ids[numcores] = l->apic_id;
                 numcores++;
                 break;
             case APIC_TYPE_IO_APIC:
                 ioapic2 = (ioapic *)p;
-                log.info("IOAPIC:\n");
-                log.info("CPU%d: 0x%x\n", ioapic2->apic_id, ioapic2->addr);
+                //log.info("IOAPIC:\n");
+                //log.info("CPU%d: 0x%x\n", ioapic2->apic_id, ioapic2->addr);
                 break;
         }
         p += m->len;

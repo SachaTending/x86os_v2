@@ -7,6 +7,7 @@
 #include <acpi.hpp>
 
 static logger log("ACPI");
+static logger lailog("LAI");
 
 uint32_t *acpi = (uint32_t *)0x000E0000;
 
@@ -24,7 +25,7 @@ bool doChecksum(ACPISDTHeader *tableHeader)
 {
     unsigned char sum = 0;
  
-    for (int i = 0; i < tableHeader->Length; i++)
+    for (int i = 0; i < (int)tableHeader->Length; i++)
     {
         sum += ((char *) tableHeader)[i];
     }
@@ -127,12 +128,24 @@ typedef union pci_dev {
     };
 } pci_dev_t;
 
+#define dbg(a)
+
+#define LAI_DEBUG_LOG 1
+#define LAI_WARN_LOG 2
+
 extern "C" {
     int lai_start_pm_timer();
     void lai_set_acpi_revision(int);
     void lai_create_namespace();
+    void lai_busy_wait_pm_timer(uint64_t ms);
     void laihost_log(int lvl, const char *msg) {
-        log.info("LAI: Level: %d, MSG: %s\n", lvl, msg);
+        if (lvl == LAI_DEBUG_LOG) {
+            lailog.debug("%s\n", msg);
+        } else if (lvl == LAI_WARN_LOG) {
+            lailog.warning("%s\n", msg);
+        } else {
+            lailog.info("UNKNOWN LVL %d, MSG: %s\n", msg);
+        }
     }
     uint32_t laihost_scan(char *sig, size_t index) {
         //log.debug("LAIHOST_SCAN: SIG: %s INDEX: %d\n", sig, index);
@@ -143,11 +156,13 @@ extern "C" {
             if (!strcmp((const char *)rsdt_pointers[i], (char *)"FACP")) {
                 FADT *fadt = (FADT *)rsdt_pointers[i];
                 #define macro(a) ((ACPISDTHeader *)fadt->Dsdt)->Signature[a]
-                if (rsdp->Revision >= 2) {
+                if (rsdp->Revision >= 2 && fadt->X_Dsdt != 0) {
+                    log.debug("Signature: %c%c%c%c\n", ((char *)fadt->X_Dsdt)[0], ((char *)fadt->X_Dsdt)[1], ((char *)fadt->X_Dsdt)[2], ((char *)fadt->X_Dsdt)[3]);
                     return (uint32_t)fadt->X_Dsdt;
                 }
                 //log.debug("Found DSDT At 0x%x\n", fadt->Dsdt);
-                //log.debug("Signature: %c%c%c%c\n", macro(0), macro(1), macro(2), macro(3));
+                log.debug("lol rsdp ver is below 2\n");
+                log.debug("Signature: %c%c%c%c\n", ((char *)fadt->Dsdt)[0], ((char *)fadt->Dsdt)[1], ((char *)fadt->Dsdt)[2], ((char *)fadt->Dsdt)[3]);
                 return fadt->Dsdt;
             }
         }
@@ -169,43 +184,47 @@ extern "C" {
         for(;;);
     }
     void laihost_sleep(uint64_t ms) {
-        log.debug("LAI: laihost_sleep(%u)\n", ms);
+        //log.debug("LAI: laihost_sleep(%u)\n", ms);
+        lai_busy_wait_pm_timer(ms);
     }
     uint64_t laihost_timer() {
         return t+=100;
     }
     void laihost_outb(uint16_t port, uint8_t val) {
         //log.debug("LAI: OUTB: 0x%x to 0x%x\n", val, port);
+        dbg(log.debug("laihost_outb(0x%x, %u(0x%x))\n", port, val, val););
         outb(port, val);
     }
     void laihost_outw(uint16_t port, uint16_t val) {
         //log.debug("LAI: OUTW: 0x%x to 0x%x\n", val, port);
+        dbg(log.debug("laihost_outw(0x%x, %u(0x%x))\n", port, val, val););
         outw(port, val);
     }
     void laihost_outd(uint16_t port, uint32_t val) {
         //log.debug("LAI: OUTL: 0x%x to 0x%x\n", val, port);
+        dbg(log.debug("laihost_outd(0x%x, %u(0x%x))\n", port, val, val););
         outl(port, val);
     }
     uint8_t laihost_inb(uint16_t port) {
         //log.debug("LAI: INB 0x%x = ", port);
         uint8_t val = inb(port);
         //printf("0x%x\n", val);
+        dbg(log.debug("laihost_inb(0x%x) -> %u\n", port, val););
         return val;
     }
     uint16_t laihost_inw(uint16_t port) {
         //log.debug("LAI: INW 0x%x = ", port);
         uint16_t val = inw(port);
+        dbg(log.debug("laihost_inw(0x%x) -> %u\n", port, val););
         //printf("0x%x\n", val);
         return val;
     }
     uint32_t laihost_ind(uint16_t port) {
         //log.debug("LAI: INL 0x%x = ", port);
         uint32_t val = inl(port);
+        dbg(log.debug("laihost_ind(0x%x) -> %u\n", port, val););
         //printf("0x%x\n", val);
         return val;
-    }
-    void laihost_handle_amldebug(void *ptr) {
-        //log.debug("LAI: DBG: 0x%x\n", ptr);
     }
     int lai_enable_acpi(uint32_t);
     int lai_disable_acpi(void);
@@ -218,7 +237,8 @@ extern "C" {
         (void)seg;
         dev.field_num = (off & 0xFC) >> 2;
         outl(0xCF8, dev.bits);
-        return inb(0xCFC + (off & 3));
+        uint8_t out = inb(0xCFC + (off & 3));
+        return out;
     }
 
     uint16_t laihost_pci_readw(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun, uint16_t off) {
@@ -232,6 +252,7 @@ extern "C" {
         return inw(0xCFC + (off & 2));
     }
     void *laihost_map(size_t addr, size_t count) {
+        (void)count;
         return (void *)addr;
     }
     uint32_t laihost_pci_readd(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun, uint16_t off) {
@@ -244,7 +265,6 @@ extern "C" {
         outl(0xCF8, dev.bits);
         return inl(0xCFC);
     }
-
     uint16_t lai_get_sci_event(void);
     void lai_set_sci_event(uint16_t);
     void lai_acpi_reset();
@@ -255,7 +275,11 @@ FADT *fadt = 0;
 
 void acpi_event(registers_t *regs) {
     (void)regs;
-    log.debug("ACPI Event: 0x%x\n", fadt->PM1aEventBlock);
+    if ((fadt->PM1aEventBlock & 0x0200) == 0x0200) {
+        log.info("Push button pressed.\n");
+        log.info("Powering off...\n");
+        lai_enter_sleep(5);
+    }
 }
 
 void madt_setup();
@@ -270,6 +294,10 @@ namespace ACPI
                 break;
             }
         }
+        if (strcmp((const char *)acpi, (char *)"RSD PTR ")) {
+            log.error("RSDP Not found, ACPI module is exiting...\n");
+            return;
+        }
         rsdp = (RSDP_t *)acpi;
         log.info("OEMID: "); 
         for (int i=0;i<6;i++) printf("%c", rsdp->OEMID[i]);
@@ -281,13 +309,7 @@ namespace ACPI
         for (int i=0;i<6;i++) printf("%c", rsdt->OEMID[i]);
         printf("\n");
         rsdt_fields = (rsdt->Length - sizeof(ACPISDTHeader)) / 4;
-        log.info("Fields: %d\n", rsdt_fields);
         rsdt_pointers = (uint32_t *)(((int)rsdt) + sizeof(ACPISDTHeader));
-        #undef macro
-        #define macro(a) ((ACPISDTHeader *)rsdt_pointers[i])->Signature[a]
-        for (int i=0;i<rsdt_fields;i++) {
-            log.info("%d. %c%c%c%c\n", i, macro(0), macro(1), macro(2), macro(3));
-        }
         fadt = (FADT *)laihost_scan((char *)"FACP", 0);
         IDT::SetStub(acpi_event, fadt->SCI_Interrupt);
         log.info("SCI Interrupt: %d\n", fadt->SCI_Interrupt);
@@ -308,8 +330,8 @@ namespace ACPI
             if (!strcmp((const char *)rsdt_pointers[i], (char *)"FACP")) {
                 FADT *fadt = (FADT *)rsdt_pointers[i];
                 #define macro(a) ((ACPISDTHeader *)fadt->Dsdt)->Signature[a]
-                log.debug("Found DSDT At 0x%x\n", fadt->Dsdt);
-                log.debug("Signature: %c%c%c%c\n", macro(0), macro(1), macro(2), macro(3));
+                //log.debug("Found DSDT At 0x%x\n", fadt->Dsdt);
+                //log.debug("Signature: %c%c%c%c\n", macro(0), macro(1), macro(2), macro(3));
                 return fadt->Dsdt;
             }
         }

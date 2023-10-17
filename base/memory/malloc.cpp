@@ -36,7 +36,7 @@ void Kernel::pmm_setup() {
         }
     }
     if (big.addr == (uint64_t)&kernel_start) {
-        big.addr = (uint64_t)&kernel_end+1;
+        big.addr = (uint64_t)&kernel_end;
         big.len = big.len - (&kernel_end - &kernel_start);
     }
     root = (alloc_struct *)big.addr;

@@ -1,24 +1,8 @@
-#include <idt.hpp>
 #include <libc.hpp>
+#include <sched.hpp>
 
-enum TASK_STATE {
-    TASK_CREATED,
-    TASK_RUNNING,
-    TASK_PENDING
-};
-
-struct tast_struct
-{
-    int pid;
-    const char *name;
-    registers_t regs;
-    uint32_t stack, entry;
-    tast_struct *next;
-    TASK_STATE state;
-};
-
-tast_struct *root_task = 0;
-tast_struct *current_task = 0;
+task_struct *root_task = 0;
+task_struct *current_task = 0;
 int nextpid = 0;
 
 void idle() {
@@ -59,15 +43,15 @@ void sched(registers_t *regs) {
 }
 typedef void (*task_entry)();
 void create_task(task_entry entry, const char *name) {
-    tast_struct *task = new tast_struct;
+    task_struct *task = new task_struct;
     task->entry = (uint32_t)entry;
     task->name = name;
-    task->stack = (uint32_t)new uint32_t[16384/4];
+    task->stack = (uint32_t)new uint32_t[16384/4]+16384;
     task->next = 0;
     task->state = TASK_CREATED;
     task->pid = nextpid;
     nextpid++;
-    tast_struct *idk = root_task;
+    task_struct *idk = root_task;
     while (idk->next != 0)
     {
         idk = idk->next;
@@ -76,10 +60,10 @@ void create_task(task_entry entry, const char *name) {
 }
 
 void sched_init() {
-    current_task = new tast_struct; // Create first task
-    memset(current_task, 0, sizeof(tast_struct));
+    current_task = new task_struct; // Create first task
+    memset(current_task, 0, sizeof(task_struct));
     current_task->entry = (uint32_t)idle; // First task gonna be idle
-    current_task->stack = (uint32_t)new uint32_t[16384/4];
+    current_task->stack = (uint32_t)new uint32_t[16384/4]+16384;
     current_task->name = "Idle task";
     current_task->pid = nextpid;
     current_task->state = TASK_CREATED;

@@ -9,12 +9,21 @@
 
 static logger log("Bootstrap");
 
-static int *screen = (int *)mbi->framebuffer_addr;
+extern uint32_t fb;
 
+static int *screen = (int *)mbi->framebuffer_addr;
+void flush_fb();
 void putpixel(int x, int y, uint32_t color) {
+    if (color == 0) {
+        return;
+    }
     size_t where = x + y * (mbi->framebuffer_pitch / sizeof(uint32_t));
-    #define SET(off) screen[where + off] = color;
-    for (int i=0;i<1;i++) SET(i);
+    #define SET(off,c) screen[where + off] = c;
+    for (int i=0;i<1;i++) {
+        SET(i, color);
+        //SET(i, where);
+        ((uint32_t *)fb)[i+where] = color;
+    }
 }
 
 void dbgputchar(char c) {
@@ -39,13 +48,16 @@ void callConstructors(void)
     for(constructor* i = &start_ctors;i != &end_ctors; i++)
         (*i)();
 }
+
 void psf_init();
+void putc_init();
 extern "C" void init_main(multiboot_info_t *mbi2) {
     mbi = mbi2;
-    screen = (int *)mbi->framebuffer_addr;
     Kernel::pmm_setup();
     psf_init();
     callConstructors();
+    putc_init();
+    screen = (int *)mbi->framebuffer_addr;
     log.info("Oh, welcome to x86OS. Currently, kernel is setupping enviroment, then, kernel gonna do all things\n");
     IDT::Init();
     log.info("IDT: Init done.\n");

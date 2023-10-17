@@ -44,6 +44,9 @@ void PIC_sendEOI(unsigned char irq)
 extern "C" void irq_handler(registers_t *regs) {
     if (regs->int_no > 31) {
         if (stubs[regs->int_no-32]) stubs[regs->int_no-32](regs);
+        else if (regs->int_no-32 == 1) {
+            printf("kbd: 0x%x\n", inb(0x60));
+        }
         else {
             printf("unknown int %d\n", regs->int_no-32);
         }

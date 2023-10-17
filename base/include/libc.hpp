@@ -22,6 +22,7 @@ extern "C" int memcpy(void *dst, const void *src, int num);
 // Allocations
 void *malloc(size_t size);
 void free(void *addr);
+#define alloc_type(type) (type *)malloc(sizeof(type))
 
 // Other
 extern "C" void printf(const char *fmt, ...);

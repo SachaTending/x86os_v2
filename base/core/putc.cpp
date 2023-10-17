@@ -40,8 +40,24 @@ void putchar(
     /* foreground and background colors, say 0xFFFFFF and 0x000000 */
     uint32_t fg, uint32_t bg);
 void dbgputchar(char c);
+
+uint32_t fb = 0;
+
+void putc_init() {
+    fb = (uint32_t)malloc(mbi->framebuffer_pitch*mbi->framebuffer_height);
+    //mbi->framebuffer_addr = (uint32_t)malloc(mbi->framebuffer_pitch*mbi->framebuffer_height);
+    memset((void *)fb, 0, mbi->framebuffer_pitch*mbi->framebuffer_height);
+}
+
+void flush_fb() {
+    memcpy((void *)fb, (const void *)mbi->framebuffer_addr, mbi->framebuffer_pitch*mbi->framebuffer_height);
+}
+
 void putc(char c) {
+    if (c == '\n') dbgputchar('\r');
+    dbgputchar(c);
     if (c == '\n') {
+        //flush_fb();
         y+=14;
         x = 0;
         return;
@@ -52,14 +68,16 @@ void putc(char c) {
         x = 0;
         y+=14;
     } if (y > 768) {
-        memset((void *)mbi->framebuffer_addr, 0, mbi->framebuffer_pitch*mbi->framebuffer_height);
-        y = 0;
+        //memcpy((void *)mbi->framebuffer_addr, (void *)(mbi->framebuffer_addr+(mbi->framebuffer_pitch*14)), mbi->framebuffer_pitch*1024-14);
+        memcpy((void *)fb, (void *)(fb+(mbi->framebuffer_pitch*14)), mbi->framebuffer_pitch*1024-14);
+        memcpy((void *)mbi->framebuffer_addr, (const void *)fb, mbi->framebuffer_pitch*1024-14);
+        y -= 14;
         x = 0;
+        putchar(c, x, y, fg, bg);
+        x+=8;
     }
     if (!serial_done) {
         init_serial();
         serial_done = true;
     }
-    if (c == '\n') dbgputchar('\r');
-    dbgputchar(c);
 }
