@@ -51,7 +51,7 @@ void callConstructors(void)
 
 void psf_init();
 void putc_init();
-extern "C" void init_main(multiboot_info_t *mbi2) {
+extern "C" uint8_t init_main(multiboot_info_t *mbi2) {
     mbi = mbi2;
     Kernel::pmm_setup();
     psf_init();
@@ -65,4 +65,5 @@ extern "C" void init_main(multiboot_info_t *mbi2) {
     log.info("GDT: Init done.\n");
     log.info("All done for kernel main, jumping to it!\n");
     Kernel::Main();
+    return 1;
 }
