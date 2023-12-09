@@ -26,3 +26,6 @@ void free(void *addr);
 
 // Other
 extern "C" void printf(const char *fmt, ...);
+
+// Kernel stuff(very important)
+void panic(const char *fmt, ...);

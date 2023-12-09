@@ -118,7 +118,7 @@ void putchar(
         /* display a row */
         for(x=0;x<font->width;x++){
             //*((PIXEL*)(fb + line)) = *((unsigned int*)glyph) & mask ? fg : bg;
-            putpixel(x + cx, y + cy, *((unsigned int*)glyph) & mask ? fg : bg);
+            if ((*((unsigned int*)glyph) & mask ? fg : bg) != 0) putpixel(x + cx, y + cy, *((unsigned int*)glyph) & mask ? fg : bg); // speed up drawing a little bit
             /* adjust to the next pixel */
             mask >>= 1;
             line += sizeof(PIXEL);

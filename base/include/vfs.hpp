@@ -1,5 +1,5 @@
 #pragma once
-#include <vfs_defs.hpp>
+#include "vfs_defs.hpp"
 bool vfs_is_dir(char* path);
 bool vfs_mount(uint16_t disk_id,char* path);
 bool vfs_load_contents(struct node* node,char* path);

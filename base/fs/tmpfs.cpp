@@ -1,85 +1,110 @@
+#include "libc.hpp"
 #include <vfs_drive_mgr.hpp>
-#include <libc.hpp>
-#include <logger.hpp>
 
-static logger log("TMPFS");
-
-typedef struct tmpfs_node_file {
-    void *p;
-    size_t size;
-} tmpfs_node_file_t;
-
-typedef struct tmpfs_node {
-    const char *path;
+struct tmpfs_node
+{
+    struct tmpfs_node *next;
+    struct tmpfs_node *prev;
     bool is_dir;
-    tmpfs_node_file_t file_ex;
-    tmpfs_node_t *next;
-} tmpfs_node_t;
+    char *path;
+    struct ext_file
+    {
+        void *data;
+        uint32_t len;
+    } file;
+};
 
-
-
-struct dir_report tmpfs_iterate_dir(char *path, fs_driver *d) {
-    log.info("path: %s\n", path);
-    dir_report rep;
-    rep.num_entries = 1;
-    rep.entries = (node *)malloc(sizeof(node));
-    rep.entries->name = "SUS";
-    rep.entries->flags = FLAGS_PRESENT;
-    return rep;
+tmpfs_node *tmpfs_find_node(tmpfs_node *root, char *path) {
+    tmpfs_node *node = root;
+    while (node)
+    {
+        if (!strcmp(node->path, path)) {
+            return node;
+        }
+        node = node->next;
+    }
+    return 0;
 }
 
-struct file_buffer tmpfs_read_file(char* path,uint64_t offset,uint64_t size, fs_driver *drv) {
-    file_buffer f = {
-        .data = 0,
-        .size = 0
-    };
-    return f;
-}
-
-bool tmpfs_write_file (char* path,uint64_t offset,struct file_buffer buf, fs_driver *drv) {
-    return false;
-}
-
-struct node tmpfs_inspect_dir(char* path, fs_driver *drv) {
-    return {};
-}
-
-fs_driver tmpfs_gen_drv() {
-    fs_driver drv = {
-        .present = true,
-        .inspect = tmpfs_inspect_dir,
-        .iterate_dir = tmpfs_iterate_dir,
-        .read_file = tmpfs_read_file,
-        .write_file = tmpfs_write_file,
-        .priv_data = 0
-    };
-    drv.priv_data = malloc(sizeof(tmpfs_node_t));
-    memset(drv.priv_data, 0, sizeof(tmpfs_node_t));
-    tmpfs_node_t *tmp_node = (tmpfs_node_t *)drv.priv_data;
-    tmp_node->path = "/";
-    tmp_node->is_dir = true;
-    tmp_node->next = 0;
-    return drv;
-}
-
-void tmpfs_destroy_drv(fs_driver *drv) {
-    tmpfs_node_t *tmp_node = (tmpfs_node_t *)drv->priv_data;
-    tmpfs_node_t *n = tmp_node;
-    while (tmp_node) {
-        n = tmp_node->next;
-        memset(tmp_node->file_ex.p, 0, tmp_node->file_ex.size);
-        free(tmp_node->file_ex.p);
-        memset(tmp_node, 0, sizeof(tmpfs_node_t));
-        free((void *)tmp_node);
-        tmp_node = n;
+struct file_buffer tmpfs_read(char* path,uint64_t offset,uint64_t size, fs_driver *drv) {
+    tmpfs_node *n = (tmpfs_node *)drv->priv_data;
+    tmpfs_node *n2 = tmpfs_find_node(n, path);
+    if (n2) {
+        if (offset > n2->file.len) return;
+        if (!n2->is_dir) {
+            file_buffer buf;
+            buf.data = malloc(size);
+            memcpy(buf.data, (const void *)(((uint32_t)n2->file.data)+offset), size);
+            return buf;
+        }
     }
 }
 
-fs_driver drv = {
-    .present = true,
-    .inspect = tmpfs_inspect_dir,
-    .iterate_dir = tmpfs_iterate_dir,
-    .read_file = tmpfs_read_file,
-    .write_file = tmpfs_write_file,
-    .priv_data = 0
-};
+void tmpfs_insert(tmpfs_node *root, tmpfs_node *n) {
+    tmpfs_node *node = root;
+    while (node)
+    {
+        if (!node->next) {
+            node->next = n;
+            n->prev = node;
+            return;
+        }
+        node = node->next;
+    }
+}
+
+bool tmpfs_write(char* path,uint64_t off,struct file_buffer buf, fs_driver *drv) {
+    tmpfs_node *root = (tmpfs_node *)drv->priv_data;
+    tmpfs_node *node = tmpfs_find_node(root, path);
+    size_t len = buf.size;
+    if (!node) {
+        node = (tmpfs_node *)malloc(sizeof(tmpfs_node));
+        memset(node, 0, sizeof(tmpfs_node));
+        node->path = strdup(path);
+        tmpfs_insert(root, node);
+    }
+    if (!node->file.len) {
+        node->file.data = malloc(1);
+    }
+    if (node->file.len < (off+len)) {
+        void *dn = malloc(off+len);
+        memcpy(dn, node->file.data, off+len);
+        free(node->file.data);
+        node->file.data = dn;
+    }
+    memcpy((void *)(((uint32_t)node->file.data)+off), buf.data, len);
+}
+
+void tmpfs_mkdir(char *path, struct vfs_mount *mnt) {
+    tmpfs_node *root = (tmpfs_node *)mnt->prv_data;
+    tmpfs_node *node = tmpfs_find_node(root, path);
+    if (!node) {
+        node = (tmpfs_node *)malloc(sizeof(tmpfs_node));
+        memset(node, 0, sizeof(tmpfs_node));
+        node->path = strdup((const char *)path);
+        node->is_dir = true;
+        tmpfs_insert(root, node);
+    }
+}
+
+void tmpfs_inspect() {
+    tmpfs_node *node = (tmpfs_node *)c_drive.prv_data;
+    while (node) {
+        if (node->path[0] == 0) goto end;
+        printf("Path: %s Is dir: %d\n", node->path, node->is_dir);
+        end:
+        node = node->next;
+    }
+}
+
+void tmpfs_init(char l) {
+    fs_driver *fs = (fs_driver *)malloc(sizeof(fs_driver));
+    fs->priv_data = malloc(sizeof(tmpfs_node));
+    memset(fs->priv_data, 0, sizeof(tmpfs_node));
+    tmpfs_node *n = (tmpfs_node *)fs->priv_data;
+    n->is_dir = true;
+    n->path = (char *)"";
+    fs->read_file = tmpfs_read;
+    fs->write_file = tmpfs_write;
+    //fs->mkdir = tmpfs_mkdir;
+}

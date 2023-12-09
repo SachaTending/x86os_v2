@@ -71,14 +71,14 @@ void bsp_unlock() {
     bsp_l = false;
 }
 
-int cpuid = 1; // 0 is main cpu that runs kernel
+int cpuid = 0; // 0 is main cpu that runs kernel
 
 extern "C" {
     volatile uint8_t aprunning = 0;  // count how many APs have started
     uint8_t bspid, bspdone = 0;      // BSP id and spinlock flag
     void ap_startup(int ap_id) {
         bsp_lock();
-        log.info("CPU%d started\n", cpuid);
+        //log.info("CPU%d started\n", cpuid);
         cpuid++;
         bsp_unlock();
         for(;;);
@@ -93,6 +93,10 @@ extern "C" void lai_busy_wait_pm_timer(uint64_t);
 void madt_setup() {
     log.info("Searching for MADT...\n");
     madt = (madt_header *)ACPI::GetTable((char *)"APIC", 0);
+    if (!madt) {
+        log.error("MADT Not found. Exiting.\n");
+        return;
+    }
     #define m(a) madt->header.Signature[a]
     log.info("Signature: %c%c%c%c\n", m(0), m(1), m(2), m(3));
     log.info("LAPIC Addr: 0x%x\n", madt->lapic_addr);
@@ -109,7 +113,7 @@ void madt_setup() {
     lapic_ptr = madt->lapic_addr;
     while (p < end) {
         m = (madt_record *)p;
-        log.info("type: %d %s\n", m->type, typetostr(m->type));
+        //log.info("type: %d %s\n", m->type, typetostr(m->type));
         switch (m->type)
         {
             case APIC_TYPE_LOCAL_APIC:

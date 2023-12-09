@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 
 #define FLAGS_PRESENT 1
 #define FLAGS_ISDIR 2

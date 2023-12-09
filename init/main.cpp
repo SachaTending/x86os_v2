@@ -30,12 +30,6 @@ void dbgputchar(char c) {
     outb(0x3f8, c);
 }
 void putc(char c);
-void printdbg(const char *txt) {
-    while (*txt) {
-        putc(*txt);
-        txt++;
-    }
-}
 
 multiboot_info_t *mbi;
 
@@ -58,7 +52,8 @@ extern "C" uint8_t init_main(multiboot_info_t *mbi2) {
     callConstructors();
     putc_init();
     screen = (int *)mbi->framebuffer_addr;
-    log.info("Oh, welcome to x86OS. Currently, kernel is setupping enviroment, then, kernel gonna do all things\n");
+    log.info("Bootstrap started from %s\n", mbi->boot_loader_name);
+    log.info("Welcome to x86OS. Currently, kernel is setupping enviroment, then, kernel gonna do all things\n");
     IDT::Init();
     log.info("IDT: Init done.\n");
     GDT::Init();

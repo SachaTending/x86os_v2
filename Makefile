@@ -3,7 +3,7 @@ NASM=nasm
 LD=ld
 
 NFLAGS = -felf32 -g
-CFLAGS = -m32 -march=i586 -c -fno-leading-underscore -I base/include -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -fpermissive -g
+CFLAGS = -m32 -march=i586 -c -fno-leading-underscore -I base/include -ffreestanding -O2 -Wall -Wextra -fpermissive -g -fno-stack-protector -fno-stack-check
 LFLAGS = -Tlink.ld -melf_i386 -A i586 -g
 
 OBJ = 
@@ -30,7 +30,7 @@ kernel.elf: $(OBJ)
 
 %.o: %.cpp
 	@echo "  [ C++] $@"
-	@g++ $(CFLAGS) -o $@ $<
+	@g++ $(CFLAGS) -fno-exceptions -fno-rtti -o $@ $<
 
 %.o: %.asm
 	@echo "  [NASM] $@"

@@ -4,7 +4,8 @@
 enum TASK_STATE {
     TASK_CREATED,
     TASK_RUNNING,
-    TASK_PENDING
+    TASK_PENDING,
+    TASK_KILLED
 };
 
 struct task_struct
@@ -24,3 +25,7 @@ typedef void (*task_entry)();
 void create_task(task_entry entry, const char *name);
 void sched_init();
 void sched_start();
+
+int getpid();
+
+void kill_task(int pid);
